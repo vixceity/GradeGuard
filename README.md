@@ -19,3 +19,8 @@ Copilot, ChatGPT, Anthropic, Gemini
 
 # Google API Used: 
 gemma-3n-e4b-it
+
+# Created By:
+- Phuong Tran
+- Jayden Nguyen
+- Alina Wasupan
