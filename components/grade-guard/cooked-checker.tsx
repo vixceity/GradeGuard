@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -31,6 +31,7 @@ const statusLabels = {
 }
 
 interface CookedCheckerProps {
+  analysisData?: CookedAnalysis | null
   currentGrade?: number
   targetGrade?: string
   isReady?: boolean
@@ -38,6 +39,7 @@ interface CookedCheckerProps {
 }
 
 export function CookedChecker({
+  analysisData = null,
   currentGrade = 78,
   targetGrade = "B",
   isReady = false,
@@ -45,6 +47,10 @@ export function CookedChecker({
 }: CookedCheckerProps) {
   const [analysis, setAnalysis] = useState<CookedAnalysis | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    setAnalysis(null)
+  }, [analysisData, currentGrade, targetGrade])
 
   const getLetterGrade = (grade: number) => {
     if (grade >= 90) return "A"
@@ -56,9 +62,11 @@ export function CookedChecker({
 
   const handleCheck = async () => {
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1200))
-    setAnalysis(mockAnalysis)
-    onAnalysisComplete?.(mockAnalysis)
+
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    const nextAnalysis = analysisData ?? mockAnalysis
+    setAnalysis(nextAnalysis)
+    onAnalysisComplete?.(nextAnalysis)
     setIsLoading(false)
   }
 

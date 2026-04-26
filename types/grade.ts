@@ -10,6 +10,7 @@ export interface Assignment {
   type: string
   points: number
   max: number
+  extraCredit?: boolean
 }
 
 export interface ParsedAssignment {
@@ -17,6 +18,7 @@ export interface ParsedAssignment {
   type: string
   points: number
   max: number
+  extraCredit?: boolean
 }
 
 export interface ParsedAssignments {
@@ -34,6 +36,7 @@ export interface NeededScoreAssignment {
   type: string
   pointsneeded: number
   max: number
+  extraCredit?: boolean
 }
 
 export type GradeEstimateResult = Record<GradeEstimateKey, NeededScoreAssignment[]>
@@ -41,6 +44,39 @@ export type GradeEstimateResult = Record<GradeEstimateKey, NeededScoreAssignment
 export interface NeededScoreSummary {
   target: GradeTarget
   scenarios: Record<GradeEstimateScenario, number | null>
+}
+
+export type OutlookStatus = 'safe' | 'possible' | 'stretch' | 'unlikely'
+
+export interface CourseOutlook {
+  message: string
+  targetGrade: GradeTarget
+  status: OutlookStatus
+  requiredAverage: number
+  focusArea: string
+}
+
+export type ImpactLevel = 'high' | 'medium' | 'low'
+
+export interface ImpactAssignmentSummary {
+  id: string
+  name: string
+  impact: ImpactLevel
+  gradeChange: number
+  category: string
+  extraCredit?: boolean
+}
+
+export interface RecoveryStep {
+  step: number
+  action: string
+  detail: string
+}
+
+export interface RecoveryPlanData {
+  steps: RecoveryStep[]
+  targetGrade: GradeTarget
+  confidence: number
 }
 
 export interface CourseAnalysisResponse {

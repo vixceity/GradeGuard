@@ -12,6 +12,7 @@ const parsedAssignmentsSchema = z.object({
       type: z.string().trim().min(1),
       points: z.coerce.number().finite().nonnegative(),
       max: z.coerce.number().finite().positive(),
+      extraCredit: z.coerce.boolean().optional().default(false),
     }),
   ),
 })
@@ -35,8 +36,9 @@ const parsedAssignmentsJsonSchema = {
           type: { type: 'string' },
           points: { type: 'number' },
           max: { type: 'number' },
+          extraCredit: { type: 'boolean' },
         },
-        required: ['name', 'type', 'points', 'max'],
+        required: ['name', 'type', 'points', 'max', 'extraCredit'],
         additionalProperties: false,
       },
     },
@@ -58,6 +60,7 @@ function normalizeParsedAssignments(payload: unknown): ParsedAssignments {
       type: assignment.type.trim(),
       points: assignment.points,
       max: assignment.max,
+      extraCredit: assignment.extraCredit,
     })),
   }
 }
@@ -104,13 +107,15 @@ Return ONLY valid JSON in this format:
       "name": "Assignment 1",
       "type": "Homework",
       "points": 85,
-      "max": 100
+      "max": 100,
+      "extraCredit": false
     },
     {
       "name": "Assignment 2",
       "type": "Homework",
       "points": 90,
-      "max": 100
+      "max": 100,
+      "extraCredit": false
     }
   ]
 }
@@ -121,6 +126,8 @@ Rules:
 - If wording is unclear, infer the most reasonable points
 - Match the type with the best corresponding category in the categories JSON
 - The max of the assignment is the denominator for the score; if the PDF says "85/100", the max is 100 and the points is 85
+- Set "extraCredit" to true for bonus work, test reviews, review sheets, correction work, or anything that should count as extra credit instead of a normal graded assessment
+- If an item is a test review, keep "type" matched to the closest real category such as Tests or Exams, but set "extraCredit" to true
 - Ignore everything past Attendance, so do not include Attendance and anything below it in the PDF
 
 Grades:
@@ -150,13 +157,15 @@ Return ONLY valid JSON in this format:
       "name": "Assignment 1",
       "type": "Homework",
       "points": 0,
-      "max": 100
+      "max": 100,
+      "extraCredit": false
     },
     {
       "name": "Assignment 2",
       "type": "Homework",
       "points": 0,
-      "max": 100
+      "max": 100,
+      "extraCredit": false
     }
   ]
 }
@@ -167,6 +176,8 @@ Rules:
 - If wording is unclear, infer the most reasonable future assignment names and max points
 - Match the type with the best corresponding category in the categories JSON
 - The max of the assignment is the denominator for the score, while the points should be 0 for future work
+- Set "extraCredit" to true for bonus work, test reviews, review sheets, correction work, or anything that should count as extra credit instead of a normal graded assessment
+- If an item is a test review, keep "type" matched to the closest real category such as Tests or Exams, but set "extraCredit" to true
 - If the syllabus shows that there will be more assignments in the future, create reasonable entries for those assignments with points at 0
 - Do not repeat assignments that already appear in the grades JSON
 

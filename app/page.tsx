@@ -9,17 +9,19 @@ import { CookedChecker, type CookedAnalysis } from "@/components/grade-guard/coo
 import { WhatIfSimulator } from "@/components/grade-guard/what-if-simulator"
 import { ImpactRanking } from "@/components/grade-guard/impact-ranking"
 import { RecoveryPlan } from "@/components/grade-guard/recovery-plan"
+import { buildCourseOutlook, buildRecoveryPlan, calculateImpactRanking } from "@/lib/gradeMath"
 import { AlertTriangle, BookOpenText, CheckCircle2, Target } from "lucide-react"
-import type { CourseAnalysisResponse, Weight } from "@/types/grade"
+import type { CourseAnalysisResponse, GradeTarget, Weight } from "@/types/grade"
 
 export default function GradeGuardDashboard() {
   const [categories, setCategories] = useState<Weight[]>([])
   const [courseAnalysis, setCourseAnalysis] = useState<CourseAnalysisResponse | null>(null)
   const [hasAnalyzed, setHasAnalyzed] = useState(false)
-  const [targetGrade] = useState("B")
+  const targetGrade: GradeTarget = "B"
 
   const handleCourseAnalysisComplete = (analysis: CourseAnalysisResponse) => {
     setCourseAnalysis(analysis)
+    setHasAnalyzed(false)
   }
 
   const handleOutlookAnalysisComplete = (_analysis: CookedAnalysis) => {
@@ -32,6 +34,24 @@ export default function GradeGuardDashboard() {
   const currentGrade = courseAnalysis?.currentGrade ?? null
   const projectedZeroGrade = courseAnalysis?.projectedGradeIfNoFutureDone ?? null
   const futureAssignmentCount = courseAnalysis?.futureAssignments.length ?? 0
+  const outlook = courseAnalysis
+    ? buildCourseOutlook(courseAnalysis.grades, courseAnalysis.future, courseAnalysis.weights, targetGrade)
+    : null
+  const outlookAnalysis: CookedAnalysis | null = outlook
+    ? {
+        message: outlook.message,
+        targetGrade: outlook.targetGrade,
+        status: outlook.status,
+        requiredAverage: outlook.requiredAverage,
+        focusArea: outlook.focusArea,
+      }
+    : null
+  const impactAssignments = courseAnalysis
+    ? calculateImpactRanking(courseAnalysis.grades, courseAnalysis.future, courseAnalysis.weights)
+    : []
+  const recoveryPlan = courseAnalysis
+    ? buildRecoveryPlan(courseAnalysis.grades, courseAnalysis.future, courseAnalysis.weights, targetGrade)
+    : null
   const summaryCards = [
     {
       label: "Current standing",
@@ -130,16 +150,17 @@ export default function GradeGuardDashboard() {
 
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
           <CookedChecker
+            analysisData={outlookAnalysis}
             currentGrade={currentGrade ?? 0}
             targetGrade={targetGrade}
             isReady={hasCourseAnalysis}
             onAnalysisComplete={handleOutlookAnalysisComplete}
           />
-          <RecoveryPlan isReady={hasAnalyzed} />
+          <RecoveryPlan isReady={hasAnalyzed} planData={recoveryPlan} />
         </section>
 
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.95fr)]">
-          <ImpactRanking isReady={hasAnalyzed} />
+          <ImpactRanking assignments={impactAssignments} isReady={hasAnalyzed} />
           <WhatIfSimulator isReady={hasAnalyzed} />
         </section>
       </main>
