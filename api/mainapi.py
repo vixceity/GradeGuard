@@ -16,7 +16,7 @@ if not api_key:
     raise RuntimeError("GENAI_API_KEY environment variable is required")
 
 client = genai.Client(api_key=api_key)
-modelgemini = "models/gemini-2.5-flash"
+modelgemini = "models/gemma-3n-e4b-it"
 
 app = FastAPI(title="Grade API")
 
@@ -206,6 +206,8 @@ Each key should be an array of assignment objects with:
 0 represents that the student got 0% on all non test/final assignments.
 
 If there is only the test/final left, then the 100/50/0 do not matter since the grade is entirely dependent on the test/final, so in that case just return the points needed on the test/final to achieve an A/B/C.
+
+Make sure that the points needed add up correctly with the weights to achieve the target grade. For example, if there is a test worth 50% of the grade, and the student has an average of 80% in the other categories which are worth the other 50%, then to get an A (90%) overall, the student would need to get 100% on the test
 
 Example format:
 {{
