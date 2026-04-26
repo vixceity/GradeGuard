@@ -1,6 +1,7 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 interface GradeOverviewProps {
   currentGrade: number
@@ -8,9 +9,9 @@ interface GradeOverviewProps {
 
 export function GradeOverview({ currentGrade }: GradeOverviewProps) {
   const targets = [
-    { letter: "C", threshold: 70, needed: 62, status: "safe" as const },
-    { letter: "B", threshold: 80, needed: 84, status: "possible" as const },
-    { letter: "A", threshold: 90, needed: 104, status: "impossible" as const },
+    { letter: "C", needed: 62, status: "On track" },
+    { letter: "B", needed: 84, status: "Reachable" },
+    { letter: "A", needed: 104, status: "Out of range" },
   ]
 
   const getLetterGrade = (grade: number) => {
@@ -21,70 +22,74 @@ export function GradeOverview({ currentGrade }: GradeOverviewProps) {
     return "F"
   }
 
-  const statusLabels = {
-    safe: "Safe",
-    possible: "Possible",
-    stretch: "Stretch",
-    impossible: "Not Possible"
-  }
-
-  const statusColors = {
-    safe: "text-green-700 bg-green-50",
-    possible: "text-blue-700 bg-blue-50",
-    stretch: "text-amber-700 bg-amber-50",
-    impossible: "text-gray-400 bg-gray-100"
-  }
-
   return (
     <Card className="h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Grade Overview</CardTitle>
+      <CardHeader className="gap-3 pb-0">
+        <div className="space-y-1">
+          <CardTitle className="text-base font-semibold">Grade Overview</CardTitle>
+          <CardDescription className="text-sm leading-6">
+            Use this snapshot to compare your current standing against the averages required
+            for each letter-grade target.
+          </CardDescription>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-start justify-between pb-4 mb-4 border-b border-border">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Current Grade</p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-semibold tabular-nums">{currentGrade}%</span>
-              <span className="text-sm text-muted-foreground">({getLetterGrade(currentGrade)})</span>
+      <CardContent className="space-y-6">
+        <div className="rounded-2xl border border-border/80 bg-muted/20 p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Current course average</p>
+              <div className="flex items-end gap-2">
+                <span className="text-4xl font-semibold tracking-tight tabular-nums text-foreground">
+                  {currentGrade}%
+                </span>
+                <span className="pb-1 text-base text-muted-foreground">
+                  {getLetterGrade(currentGrade)}
+                </span>
+              </div>
             </div>
+            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-medium">
+              3 assignments left
+            </Badge>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-            <p className="text-sm font-medium">3 assignments</p>
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-border/70 bg-card px-4 py-3">
+              <p className="text-sm text-muted-foreground">Target in focus</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">B average path</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-card px-4 py-3">
+              <p className="text-sm text-muted-foreground">Needed on remaining work</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-foreground">84%</p>
+            </div>
           </div>
         </div>
 
         <div className="space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Grade Targets
-          </p>
+          <div className="grid grid-cols-[60px_minmax(0,1fr)_96px] items-center gap-3 px-1 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            <span>Target</span>
+            <span>Likelihood</span>
+            <span className="text-right">Needed avg</span>
+          </div>
+
           <div className="space-y-2">
             {targets.map((target) => (
-              <div 
-                key={target.letter} 
-                className={`flex items-center justify-between py-2 px-3 rounded border ${
-                  target.status === "impossible" 
-                    ? "bg-gray-50 border-gray-200 opacity-60" 
-                    : "bg-card border-border"
-                }`}
+              <div
+                key={target.letter}
+                className="grid grid-cols-[60px_minmax(0,1fr)_96px] items-center gap-3 rounded-xl border border-border/75 bg-card px-4 py-3"
               >
-                <div className="flex items-center gap-3">
-                  <span className={`text-base font-semibold ${
-                    target.status === "impossible" ? "text-gray-400" : "text-foreground"
-                  }`}>
-                    {target.letter}
-                  </span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${statusColors[target.status]}`}>
-                    {statusLabels[target.status]}
-                  </span>
-                </div>
-                <span className={`text-sm tabular-nums ${
-                  target.status === "impossible" 
-                    ? "text-gray-400 line-through" 
-                    : "text-muted-foreground"
-                }`}>
-                  Need {target.needed}% avg
+                <span className="text-lg font-semibold text-foreground">{target.letter}</span>
+                <Badge
+                  variant={target.status === "Out of range" ? "outline" : "secondary"}
+                  className="w-fit rounded-full px-2.5 py-1 text-xs font-medium"
+                >
+                  {target.status}
+                </Badge>
+                <span
+                  className={`text-right text-sm font-medium tabular-nums ${
+                    target.status === "Out of range" ? "text-muted-foreground" : "text-foreground"
+                  }`}
+                >
+                  {target.needed}%
                 </span>
               </div>
             ))}

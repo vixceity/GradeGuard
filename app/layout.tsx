@@ -3,13 +3,19 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+})
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+})
 
 export const metadata: Metadata = {
-  title: 'GradeGuard - AI Grade Recovery Planner',
-  description: 'Find out what you need to pass, recover, or clutch the class. Your AI-powered academic recovery planner.',
-  generator: 'v0.app',
+  title: 'GradeGuard',
+  description: 'Academic performance dashboard for course planning, grade forecasting, and recovery decisions.',
   icons: {
     icon: [
       {
@@ -36,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background">
-      <body className="font-sans antialiased">
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

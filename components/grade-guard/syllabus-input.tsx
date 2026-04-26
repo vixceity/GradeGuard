@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRef, useState, type ChangeEvent } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
-import { Trash2, Plus, Upload, FileText, X } from "lucide-react"
+import { FileText, Plus, Trash2, Upload, X } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
 
 interface GradeCategory {
@@ -37,17 +37,19 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "text/plain"
+    "text/plain",
   ]
 
   const isValidFile = (file: File) => {
-    return allowedTypes.includes(file.type) || 
-      file.name.endsWith(".pdf") || 
-      file.name.endsWith(".docx") || 
+    return (
+      allowedTypes.includes(file.type) ||
+      file.name.endsWith(".pdf") ||
+      file.name.endsWith(".docx") ||
       file.name.endsWith(".txt")
+    )
   }
 
-  const handleSyllabusFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSyllabusFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && isValidFile(file)) {
       setSyllabusFile(file)
@@ -55,7 +57,7 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
     }
   }
 
-  const handleGradesFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGradesFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && isValidFile(file)) {
       setGradesFile(file)
@@ -80,8 +82,7 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
     if (!syllabusText.trim() && !syllabusFile && !gradesFile) return
 
     setIsExtracting(true)
-    // TODO: Replace with Gemini API call
-    await new Promise(resolve => setTimeout(resolve, 1200))
+    await new Promise((resolve) => setTimeout(resolve, 1200))
 
     const mockExtracted: GradeCategory[] = [
       { id: "1", name: "Exams", weight: 40 },
@@ -113,11 +114,16 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Course Setup</CardTitle>
+      <CardHeader className="gap-3 pb-0">
+        <div className="space-y-1">
+          <CardTitle className="text-base font-semibold">Course Setup</CardTitle>
+          <CardDescription className="max-w-xl text-sm leading-6">
+            Upload a syllabus or paste the grading policy, then confirm the category weights
+            before running the outlook tools.
+          </CardDescription>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Hidden file inputs */}
+      <CardContent className="space-y-6">
         <input
           ref={syllabusInputRef}
           type="file"
@@ -135,24 +141,48 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
           aria-label="Upload grades file"
         />
 
-        {/* File upload section */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Upload Documents</p>
-          <div className="grid grid-cols-2 gap-2">
-            {/* Syllabus upload */}
+        <div className="rounded-2xl border border-dashed border-border/90 bg-muted/35 p-4 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">Import course materials</p>
+              <p className="max-w-lg text-sm leading-6 text-muted-foreground">
+                Add a syllabus, grade export, or pasted policy text. GradeGuard extracts the
+                weighting structure so you can verify it before analysis.
+              </p>
+            </div>
+            <Button
+              onClick={handleExtract}
+              disabled={isExtracting || (!syllabusText.trim() && !syllabusFile && !gradesFile)}
+              className="w-full rounded-full px-5 sm:w-auto"
+            >
+              {isExtracting ? (
+                <>
+                  <Spinner className="h-3.5 w-3.5" />
+                  Extracting...
+                </>
+              ) : (
+                "Extract category weights"
+              )}
+            </Button>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             {syllabusFile ? (
-              <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-xs truncate">{syllabusFile.name}</span>
+              <div className="flex min-h-12 items-center justify-between rounded-xl border border-border/80 bg-card px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Syllabus attached</p>
+                    <p className="truncate text-sm text-muted-foreground">{syllabusFile.name}</p>
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 text-muted-foreground hover:text-destructive shrink-0"
+                  size="icon-sm"
+                  className="rounded-full text-muted-foreground hover:text-destructive"
                   onClick={removeSyllabusFile}
                 >
-                  <X className="w-3 h-3" />
+                  <X className="h-3.5 w-3.5" />
                   <span className="sr-only">Remove syllabus</span>
                 </Button>
               </div>
@@ -160,27 +190,36 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
               <button
                 type="button"
                 onClick={() => syllabusInputRef.current?.click()}
-                className="p-3 border border-dashed border-border rounded text-center hover:border-primary hover:bg-muted/50 transition-colors"
+                className="flex min-h-12 items-center justify-between rounded-xl border border-dashed border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-card"
               >
-                <Upload className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Syllabus</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary">
+                    <Upload className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Upload syllabus</p>
+                    <p className="text-sm text-muted-foreground">PDF, DOCX, or TXT</p>
+                  </div>
+                </div>
               </button>
             )}
 
-            {/* Grades upload */}
             {gradesFile ? (
-              <div className="flex items-center justify-between p-2 bg-muted rounded border border-border">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-xs truncate">{gradesFile.name}</span>
+              <div className="flex min-h-12 items-center justify-between rounded-xl border border-border/80 bg-card px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Grades attached</p>
+                    <p className="truncate text-sm text-muted-foreground">{gradesFile.name}</p>
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 text-muted-foreground hover:text-destructive shrink-0"
+                  size="icon-sm"
+                  className="rounded-full text-muted-foreground hover:text-destructive"
                   onClick={removeGradesFile}
                 >
-                  <X className="w-3 h-3" />
+                  <X className="h-3.5 w-3.5" />
                   <span className="sr-only">Remove grades</span>
                 </Button>
               </div>
@@ -188,96 +227,109 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
               <button
                 type="button"
                 onClick={() => gradesInputRef.current?.click()}
-                className="p-3 border border-dashed border-border rounded text-center hover:border-primary hover:bg-muted/50 transition-colors"
+                className="flex min-h-12 items-center justify-between rounded-xl border border-dashed border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-card"
               >
-                <Upload className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Grades</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-primary">
+                    <Upload className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Upload grade export</p>
+                    <p className="text-sm text-muted-foreground">Optional supporting file</p>
+                  </div>
+                </div>
               </button>
             )}
           </div>
+
+          <div className="mt-5 space-y-2">
+            <label className="text-sm font-medium text-foreground" htmlFor="syllabus-text">
+              Paste grading policy
+            </label>
+            <Textarea
+              id="syllabus-text"
+              placeholder="Paste the syllabus section that describes category weights, dropped assignments, or final exam rules."
+              className="min-h-[128px] resize-none rounded-xl border-border/80 bg-card px-4 py-3 text-sm leading-6"
+              value={syllabusText}
+              onChange={(e) => setSyllabusText(e.target.value)}
+            />
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="flex-1 border-t border-border" />
-          <span>or paste text</span>
-          <div className="flex-1 border-t border-border" />
-        </div>
 
-        <Textarea
-          placeholder="Paste your syllabus grading policy..."
-          className="min-h-[60px] resize-none text-sm"
-          value={syllabusText}
-          onChange={(e) => setSyllabusText(e.target.value)}
-        />
-
-        <Button 
-          onClick={handleExtract} 
-          disabled={isExtracting || (!syllabusText.trim() && !syllabusFile && !gradesFile)} 
-          variant="secondary"
-          size="sm"
-          className="w-full"
-        >
-          {isExtracting ? (
-            <>
-              <Spinner className="w-3.5 h-3.5 mr-2" />
-              Extracting...
-            </>
-          ) : (
-            "Extract Weights"
-          )}
-        </Button>
-
-        {/* Categories section */}
         {categories.length === 0 && !isExtracting ? (
-          <div className="pt-4 border-t border-border">
-            <div className="py-4 text-center border border-dashed border-border rounded">
-              <p className="text-xs text-muted-foreground mb-2">No weights defined</p>
-              <button onClick={addCategory} className="text-xs text-primary hover:underline">
-                Add manually
-              </button>
-            </div>
+          <div className="rounded-2xl border border-dashed border-border/90 bg-muted/25 px-5 py-8 text-center">
+            <p className="text-sm font-medium text-foreground">No grade categories configured</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Extract weights from the course materials or start with a manual category list.
+            </p>
+            <Button variant="outline" onClick={addCategory} className="mt-4 rounded-full px-5">
+              <Plus className="h-4 w-4" />
+              Add category manually
+            </Button>
           </div>
         ) : categories.length > 0 ? (
-          <div className="space-y-3 pt-4 border-t border-border">
-            <div className="flex justify-between text-xs">
-              <span className="font-medium text-muted-foreground">Grade Categories</span>
-              <span className={totalWeight === 100 ? "text-green-600" : "text-amber-600"}>
-                Total: {totalWeight}%
-              </span>
+          <div className="space-y-4 rounded-2xl border border-border/80 bg-card/80 p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Grade categories</p>
+                <p className="text-sm text-muted-foreground">
+                  Confirm the names and weights before running the outlook.
+                </p>
+              </div>
+              <div className="text-sm">
+                <span className="text-muted-foreground">Total weight</span>{" "}
+                <span
+                  className={
+                    totalWeight === 100
+                      ? "font-semibold text-green-700"
+                      : "font-semibold text-amber-700"
+                  }
+                >
+                  {totalWeight}%
+                </span>
+              </div>
             </div>
+
+            <div className="grid grid-cols-[minmax(0,1fr)_88px_44px] items-center gap-2 px-1 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              <span>Category</span>
+              <span className="text-center">Weight</span>
+              <span className="sr-only">Remove</span>
+            </div>
+
             <div className="space-y-2">
               {categories.map((cat) => (
-                <div key={cat.id} className="flex items-center gap-2">
+                <div
+                  key={cat.id}
+                  className="grid grid-cols-[minmax(0,1fr)_88px_44px] items-center gap-2 rounded-xl border border-border/70 bg-background px-3 py-3"
+                >
                   <Input
                     value={cat.name}
                     onChange={(e) => updateCategory(cat.id, "name", e.target.value)}
-                    className="flex-1 h-8 text-sm"
+                    className="h-10 rounded-lg border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
                   />
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      value={cat.weight}
-                      onChange={(e) => updateCategory(cat.id, "weight", e.target.value)}
-                      className="w-14 h-8 text-sm text-center"
-                      min={0}
-                      max={100}
-                    />
-                    <span className="text-xs text-muted-foreground">%</span>
-                  </div>
+                  <Input
+                    type="number"
+                    value={cat.weight}
+                    onChange={(e) => updateCategory(cat.id, "weight", e.target.value)}
+                    className="h-10 rounded-lg border-border/80 bg-card text-center text-sm"
+                    min={0}
+                    max={100}
+                  />
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="h-10 w-10 rounded-full text-muted-foreground hover:text-destructive"
                     onClick={() => removeCategory(cat.id)}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
             </div>
-            <Button variant="outline" size="sm" onClick={addCategory} className="w-full">
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Add Category
+
+            <Button variant="outline" onClick={addCategory} className="w-full rounded-xl">
+              <Plus className="h-4 w-4" />
+              Add category
             </Button>
           </div>
         ) : null}

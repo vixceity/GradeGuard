@@ -1,6 +1,7 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 export interface Assignment {
   id: string
@@ -20,47 +21,73 @@ const mockAssignments: Assignment[] = [
 
 interface ImpactRankingProps {
   assignments?: Assignment[]
+  isReady?: boolean
 }
 
-export function ImpactRanking({ assignments = mockAssignments }: ImpactRankingProps) {
+export function ImpactRanking({
+  assignments = mockAssignments,
+  isReady = false,
+}: ImpactRankingProps) {
   return (
     <Card className="h-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium">Assignment Impact</CardTitle>
+      <CardHeader className="gap-3 pb-0">
+        <div className="space-y-1">
+          <CardTitle className="text-base font-semibold">Assignment Impact</CardTitle>
+          <CardDescription className="text-sm leading-6">
+            Prioritize the remaining work by expected effect on the course average.
+          </CardDescription>
+        </div>
       </CardHeader>
-      <CardContent>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground border-b border-border">
-              <th className="pb-2 font-medium">Assignment</th>
-              <th className="pb-2 font-medium">Category</th>
-              <th className="pb-2 font-medium text-center w-20">Impact</th>
-              <th className="pb-2 font-medium text-right w-16">Change</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {assignments.map((a) => (
-              <tr key={a.id}>
-                <td className="py-2 font-medium">{a.name}</td>
-                <td className="py-2 text-muted-foreground">{a.category}</td>
-                <td className="py-2 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                    a.impact === "high" 
-                      ? "bg-green-50 text-green-700" 
-                      : a.impact === "medium" 
-                      ? "bg-amber-50 text-amber-700" 
-                      : "bg-gray-100 text-gray-600"
-                  }`}>
-                    {a.impact.charAt(0).toUpperCase() + a.impact.slice(1)}
-                  </span>
-                </td>
-                <td className="py-2 text-right tabular-nums text-muted-foreground">
-                  +{a.gradeChange}%
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <CardContent className="space-y-4">
+        {!isReady ? (
+          <div className="rounded-2xl border border-dashed border-border/90 bg-muted/25 px-5 py-8 text-center">
+            <p className="text-sm font-medium text-foreground">Impact ranking not available yet</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Complete the outlook review first so the ranking can focus on the relevant target.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-xl border border-border/70 bg-muted/20 px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Ranking reflects assignment weight, remaining scoring opportunity, and the
+                current target-grade path.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[540px] text-sm">
+                <thead>
+                  <tr className="border-b border-border/80 text-left text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                    <th className="pb-3">Assignment</th>
+                    <th className="pb-3">Category</th>
+                    <th className="pb-3">Priority</th>
+                    <th className="pb-3 text-right">Potential lift</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/70">
+                  {assignments.map((assignment) => (
+                    <tr key={assignment.id}>
+                      <td className="py-4 font-medium text-foreground">{assignment.name}</td>
+                      <td className="py-4 text-muted-foreground">{assignment.category}</td>
+                      <td className="py-4">
+                        <Badge
+                          variant={assignment.impact === "low" ? "outline" : "secondary"}
+                          className="rounded-full px-2.5 py-1 text-xs font-medium capitalize"
+                        >
+                          {assignment.impact}
+                        </Badge>
+                      </td>
+                      <td className="py-4 text-right font-medium tabular-nums text-foreground">
+                        +{assignment.gradeChange}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )
