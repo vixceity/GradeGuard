@@ -1,64 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
-
-export interface RecoveryStep {
-  step: number
-  action: string
-  detail: string
-}
-
-export interface RecoveryPlanData {
-  steps: RecoveryStep[]
-  targetGrade: string
-  confidence: number
-}
-
-const mockPlan: RecoveryPlanData = {
-  steps: [
-    {
-      step: 1,
-      action: "Prioritize the final exam",
-      detail: "Carries 20% of the course grade. Start review two weeks early and protect study time.",
-    },
-    {
-      step: 2,
-      action: "Capture easy homework points",
-      detail: "Finish short homework and corrections first to keep the average from slipping.",
-    },
-    {
-      step: 3,
-      action: "Hold an 84% average on remaining work",
-      detail: "That keeps the B path open and avoids depending on one last assessment.",
-    },
-  ],
-  targetGrade: "B",
-  confidence: 78,
-}
+import type { RecoveryPlanData } from "@/types/grade"
 
 interface RecoveryPlanProps {
   isReady?: boolean
+  planData?: RecoveryPlanData | null
   onPlanGenerated?: (plan: RecoveryPlanData) => void
 }
 
 export function RecoveryPlan({
   isReady = false,
+  planData = null,
   onPlanGenerated,
 }: RecoveryPlanProps) {
   const [plan, setPlan] = useState<RecoveryPlanData | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
 
+  useEffect(() => {
+    setPlan(null)
+  }, [planData])
+
   const handleGenerate = async () => {
+    if (!planData) {
+      return
+    }
+
     setIsGenerating(true)
     setPlan(null)
-    await new Promise((resolve) => setTimeout(resolve, 1200))
-    setPlan(mockPlan)
-    onPlanGenerated?.(mockPlan)
-    setIsGenerating(false)
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      setPlan(planData)
+      onPlanGenerated?.(planData)
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
@@ -86,7 +68,11 @@ export function RecoveryPlan({
               Generate a short plan centered on the highest-impact assignments and the average
               required to stay on target.
             </p>
-            <Button onClick={handleGenerate} className="mt-4 w-full rounded-full sm:w-auto">
+            <Button
+              onClick={handleGenerate}
+              disabled={!planData}
+              className="mt-4 w-full rounded-full sm:w-auto"
+            >
               Generate plan
             </Button>
           </div>

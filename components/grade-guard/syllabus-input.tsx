@@ -46,7 +46,10 @@ function AssignmentList({
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">{assignment.name}</p>
-                <p className="truncate text-sm text-muted-foreground">{assignment.type}</p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {assignment.type}
+                  {assignment.extraCredit ? " · Extra credit" : ""}
+                </p>
               </div>
               <p className="text-right text-sm font-medium tabular-nums text-foreground">
                 {assignment.points}/{assignment.max}
