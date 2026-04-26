@@ -10,36 +10,39 @@ import { WhatIfSimulator } from "@/components/grade-guard/what-if-simulator"
 import { ImpactRanking } from "@/components/grade-guard/impact-ranking"
 import { RecoveryPlan } from "@/components/grade-guard/recovery-plan"
 import { AlertTriangle, BookOpenText, CheckCircle2, Target } from "lucide-react"
-
-interface GradeCategory {
-  id: string
-  name: string
-  weight: number
-}
+import type { CourseAnalysisResponse, Weight } from "@/types/grade"
 
 export default function GradeGuardDashboard() {
-  const [categories, setCategories] = useState<GradeCategory[]>([])
-  const [currentGrade] = useState(78)
+  const [categories, setCategories] = useState<Weight[]>([])
+  const [courseAnalysis, setCourseAnalysis] = useState<CourseAnalysisResponse | null>(null)
   const [hasAnalyzed, setHasAnalyzed] = useState(false)
   const [targetGrade] = useState("B")
 
-  const handleAnalysisComplete = (_analysis: CookedAnalysis) => {
+  const handleCourseAnalysisComplete = (analysis: CourseAnalysisResponse) => {
+    setCourseAnalysis(analysis)
+  }
+
+  const handleOutlookAnalysisComplete = (_analysis: CookedAnalysis) => {
     setHasAnalyzed(true)
   }
 
   const totalWeight = categories.reduce((sum, category) => sum + category.weight, 0)
   const isCourseConfigured = categories.length > 0
+  const hasCourseAnalysis = courseAnalysis !== null
+  const currentGrade = courseAnalysis?.currentGrade ?? null
+  const projectedZeroGrade = courseAnalysis?.projectedGradeIfNoFutureDone ?? null
+  const futureAssignmentCount = courseAnalysis?.futureAssignments.length ?? 0
   const summaryCards = [
     {
       label: "Current standing",
-      value: `${currentGrade}%`,
-      detail: "C average",
+      value: currentGrade === null ? "--" : `${currentGrade}%`,
+      detail: hasCourseAnalysis ? `Zero-future floor ${projectedZeroGrade}%` : "Awaiting PDF analysis",
       icon: Target,
     },
     {
       label: "Target grade",
       value: targetGrade,
-      detail: hasAnalyzed ? "Reality check available" : "Awaiting review",
+      detail: hasCourseAnalysis ? "Needed-score scenarios loaded" : "Upload both PDFs",
       icon: CheckCircle2,
     },
     {
@@ -50,8 +53,8 @@ export default function GradeGuardDashboard() {
     },
     {
       label: "Risk status",
-      value: hasAnalyzed ? "Monitored" : "Needs review",
-      detail: hasAnalyzed ? "Recovery tools unlocked" : "Run outlook analysis next",
+      value: hasCourseAnalysis ? "Imported" : "Needs review",
+      detail: hasCourseAnalysis ? `${futureAssignmentCount} future assignments tracked` : "Analyze both PDFs next",
       icon: AlertTriangle,
     },
   ]
@@ -80,10 +83,10 @@ export default function GradeGuardDashboard() {
 
             <div className="flex flex-wrap gap-2">
               <Badge variant={isCourseConfigured ? "secondary" : "outline"} className="rounded-full px-3 py-1.5 text-xs font-medium">
-                {isCourseConfigured ? "Course setup in progress" : "Upload syllabus to begin"}
+                {isCourseConfigured ? "Course imported" : "Upload syllabus and grades PDFs"}
               </Badge>
-              <Badge variant={hasAnalyzed ? "secondary" : "outline"} className="rounded-full px-3 py-1.5 text-xs font-medium">
-                {hasAnalyzed ? "Outlook reviewed" : "Outlook not reviewed"}
+              <Badge variant={hasCourseAnalysis ? "secondary" : "outline"} className="rounded-full px-3 py-1.5 text-xs font-medium">
+                {hasCourseAnalysis ? "Scenario analysis ready" : "Scenario analysis pending"}
               </Badge>
             </div>
           </div>
@@ -111,18 +114,26 @@ export default function GradeGuardDashboard() {
 
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,1fr)]">
           <SyllabusInput
+            analysis={courseAnalysis}
             categories={categories}
             onCategoriesChange={setCategories}
+            onAnalysisComplete={handleCourseAnalysisComplete}
           />
-          <GradeOverview currentGrade={currentGrade} />
+          <GradeOverview
+            categoryCount={categories.length}
+            currentGrade={currentGrade}
+            futureAssignmentCount={futureAssignmentCount}
+            neededScoreSummaries={courseAnalysis?.neededScoreSummaries ?? []}
+            projectedGradeIfNoFutureDone={projectedZeroGrade}
+          />
         </section>
 
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
           <CookedChecker
-            currentGrade={currentGrade}
+            currentGrade={currentGrade ?? 0}
             targetGrade={targetGrade}
-            isReady={isCourseConfigured}
-            onAnalysisComplete={handleAnalysisComplete}
+            isReady={hasCourseAnalysis}
+            onAnalysisComplete={handleOutlookAnalysisComplete}
           />
           <RecoveryPlan isReady={hasAnalyzed} />
         </section>

@@ -3,57 +3,86 @@
 import { useRef, useState, type ChangeEvent } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { FileText, Plus, Trash2, Upload, X } from "lucide-react"
 import { Spinner } from "@/components/ui/spinner"
-
-interface GradeCategory {
-  id: string
-  name: string
-  weight: number
-}
+import type { Assignment, CourseAnalysisResponse, Weight } from "@/types/grade"
 
 interface SyllabusInputProps {
-  categories: GradeCategory[]
-  onCategoriesChange: (categories: GradeCategory[]) => void
+  analysis: CourseAnalysisResponse | null
+  categories: Weight[]
+  onCategoriesChange: (categories: Weight[]) => void
+  onAnalysisComplete: (analysis: CourseAnalysisResponse) => void
 }
 
-export interface ExtractedWeights {
-  categories: GradeCategory[]
-  confidence: number
-  rawText: string
+function AssignmentList({
+  assignments,
+  description,
+  emptyLabel,
+  title,
+}: {
+  assignments: Assignment[]
+  description: string
+  emptyLabel: string
+  title: string
+}) {
+  return (
+    <div className="space-y-4 rounded-2xl border border-border/80 bg-card/80 p-4 sm:p-5">
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+
+      {assignments.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+          {emptyLabel}
+        </div>
+      ) : (
+        <div className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
+          {assignments.map((assignment) => (
+            <div
+              key={assignment.id}
+              className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-3 rounded-xl border border-border/70 bg-background px-3 py-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">{assignment.name}</p>
+                <p className="truncate text-sm text-muted-foreground">{assignment.type}</p>
+              </div>
+              <p className="text-right text-sm font-medium tabular-nums text-foreground">
+                {assignment.points}/{assignment.max}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
-export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputProps) {
-  const [syllabusText, setSyllabusText] = useState("")
+export function SyllabusInput({
+  analysis,
+  categories,
+  onCategoriesChange,
+  onAnalysisComplete,
+}: SyllabusInputProps) {
   const [syllabusFile, setSyllabusFile] = useState<File | null>(null)
   const [gradesFile, setGradesFile] = useState<File | null>(null)
   const [isExtracting, setIsExtracting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const syllabusInputRef = useRef<HTMLInputElement>(null)
   const gradesInputRef = useRef<HTMLInputElement>(null)
 
-  const allowedTypes = [
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "text/plain",
-  ]
+  const allowedTypes = ["application/pdf"]
 
   const isValidFile = (file: File) => {
-    return (
-      allowedTypes.includes(file.type) ||
-      file.name.endsWith(".pdf") ||
-      file.name.endsWith(".docx") ||
-      file.name.endsWith(".txt")
-    )
+    return allowedTypes.includes(file.type) || file.name.toLowerCase().endsWith(".pdf")
   }
 
   const handleSyllabusFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && isValidFile(file)) {
       setSyllabusFile(file)
-      setSyllabusText("")
+      setError(null)
     }
   }
 
@@ -61,6 +90,7 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
     const file = e.target.files?.[0]
     if (file && isValidFile(file)) {
       setGradesFile(file)
+      setError(null)
     }
   }
 
@@ -79,19 +109,35 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
   }
 
   const handleExtract = async () => {
-    if (!syllabusText.trim() && !syllabusFile && !gradesFile) return
+    if (!syllabusFile || !gradesFile) return
 
     setIsExtracting(true)
-    await new Promise((resolve) => setTimeout(resolve, 1200))
+    setError(null)
 
-    const mockExtracted: GradeCategory[] = [
-      { id: "1", name: "Exams", weight: 40 },
-      { id: "2", name: "Homework", weight: 20 },
-      { id: "3", name: "Quizzes", weight: 20 },
-      { id: "4", name: "Final", weight: 20 },
-    ]
-    onCategoriesChange(mockExtracted)
-    setIsExtracting(false)
+    try {
+      const formData = new FormData()
+      formData.append("syllabus", syllabusFile)
+      formData.append("grades", gradesFile)
+
+      const response = await fetch("/api/analyze-course", {
+        method: "POST",
+        body: formData,
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to analyze the uploaded PDFs")
+      }
+
+      const result = payload as CourseAnalysisResponse
+      onCategoriesChange(result.weightList)
+      onAnalysisComplete(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to analyze the uploaded PDFs")
+    } finally {
+      setIsExtracting(false)
+    }
   }
 
   const updateCategory = (id: string, field: "name" | "weight", value: string | number) => {
@@ -118,8 +164,8 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
         <div className="space-y-1">
           <CardTitle className="text-base font-semibold">Course Setup</CardTitle>
           <CardDescription className="max-w-xl text-sm leading-6">
-            Upload a syllabus or paste the grading policy, then confirm the category weights
-            before running the outlook tools.
+            Upload the syllabus PDF and grades PDF, then confirm the imported category
+            weights before using the rest of the dashboard.
           </CardDescription>
         </div>
       </CardHeader>
@@ -127,7 +173,7 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
         <input
           ref={syllabusInputRef}
           type="file"
-          accept=".pdf,.doc,.docx,.txt"
+          accept=".pdf,application/pdf"
           onChange={handleSyllabusFileSelect}
           className="hidden"
           aria-label="Upload syllabus file"
@@ -135,7 +181,7 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
         <input
           ref={gradesInputRef}
           type="file"
-          accept=".pdf,.doc,.docx,.txt"
+          accept=".pdf,application/pdf"
           onChange={handleGradesFileSelect}
           className="hidden"
           aria-label="Upload grades file"
@@ -146,22 +192,22 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
             <div className="space-y-1">
               <p className="text-sm font-semibold text-foreground">Import course materials</p>
               <p className="max-w-lg text-sm leading-6 text-muted-foreground">
-                Add a syllabus, grade export, or pasted policy text. GradeGuard extracts the
-                weighting structure so you can verify it before analysis.
+                Upload both PDFs to run the original GradeGuard pipeline: text extraction,
+                Gemini parsing, future assignment inference, and deterministic grade math.
               </p>
             </div>
             <Button
               onClick={handleExtract}
-              disabled={isExtracting || (!syllabusText.trim() && !syllabusFile && !gradesFile)}
+              disabled={isExtracting || !syllabusFile || !gradesFile}
               className="w-full rounded-full px-5 sm:w-auto"
             >
               {isExtracting ? (
                 <>
                   <Spinner className="h-3.5 w-3.5" />
-                  Extracting...
+                  Analyzing PDFs...
                 </>
               ) : (
-                "Extract category weights"
+                "Analyze course PDFs"
               )}
             </Button>
           </div>
@@ -198,7 +244,7 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">Upload syllabus</p>
-                    <p className="text-sm text-muted-foreground">PDF, DOCX, or TXT</p>
+                    <p className="text-sm text-muted-foreground">PDF required</p>
                   </div>
                 </div>
               </button>
@@ -235,32 +281,43 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">Upload grade export</p>
-                    <p className="text-sm text-muted-foreground">Optional supporting file</p>
+                    <p className="text-sm text-muted-foreground">PDF required</p>
                   </div>
                 </div>
               </button>
             )}
           </div>
 
-          <div className="mt-5 space-y-2">
-            <label className="text-sm font-medium text-foreground" htmlFor="syllabus-text">
-              Paste grading policy
-            </label>
-            <Textarea
-              id="syllabus-text"
-              placeholder="Paste the syllabus section that describes category weights, dropped assignments, or final exam rules."
-              className="min-h-[128px] resize-none rounded-xl border-border/80 bg-card px-4 py-3 text-sm leading-6"
-              value={syllabusText}
-              onChange={(e) => setSyllabusText(e.target.value)}
-            />
+          <div className="mt-5 rounded-xl border border-border/80 bg-card px-4 py-4">
+            <p className="text-sm font-medium text-foreground">Current pipeline</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Syllabus PDF + grades PDF to extracted text, Gemini JSON parsing, future assignment
+              inference, and deterministic TypeScript grade calculations.
+            </p>
           </div>
         </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
+
+        {analysis ? (
+          <div className="rounded-2xl border border-border/80 bg-muted/20 px-4 py-4">
+            <p className="text-sm font-semibold text-foreground">Latest analysis</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Imported {analysis.weightList.length} weights, {analysis.assignments.length} graded
+              assignments, and {analysis.futureAssignments.length} future assignments.
+            </p>
+          </div>
+        ) : null}
 
         {categories.length === 0 && !isExtracting ? (
           <div className="rounded-2xl border border-dashed border-border/90 bg-muted/25 px-5 py-8 text-center">
             <p className="text-sm font-medium text-foreground">No grade categories configured</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Extract weights from the course materials or start with a manual category list.
+              Analyze the two PDFs or start with a manual category list.
             </p>
             <Button variant="outline" onClick={addCategory} className="mt-4 rounded-full px-5">
               <Plus className="h-4 w-4" />
@@ -331,6 +388,23 @@ export function SyllabusInput({ categories, onCategoriesChange }: SyllabusInputP
               <Plus className="h-4 w-4" />
               Add category
             </Button>
+          </div>
+        ) : null}
+
+        {analysis ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <AssignmentList
+              title="Parsed assignments"
+              description="These are the graded assignments Gemini extracted from the uploaded grades PDF."
+              assignments={analysis.assignments}
+              emptyLabel="No graded assignments were extracted from the grades PDF."
+            />
+            <AssignmentList
+              title="Future assignments"
+              description="These are the remaining assignments inferred from the syllabus and current grade data."
+              assignments={analysis.futureAssignments}
+              emptyLabel="No future assignments were inferred from the syllabus."
+            />
           </div>
         ) : null}
       </CardContent>
