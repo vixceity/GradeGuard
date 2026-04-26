@@ -25,52 +25,46 @@ export default function GradeGuardDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+      <div className="min-h-screen bg-background">
+        <Header />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-        {/* Top Section: CTA + Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-          <CookedChecker 
-            currentGrade={currentGrade} 
-            onAnalysisComplete={handleAnalysisComplete}
-          />
-          <div className="lg:col-span-2">
-            <GradeOverview currentGrade={currentGrade} />
-          </div>
-        </div>
-
-        {/* Dashboard Grid */}
-        {hasAnalyzed && (
-          <div className="space-y-4">
-            {/* Two Column: Syllabus + Simulator */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SyllabusInput
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <SyllabusInput
                 categories={categories}
                 onCategoriesChange={setCategories}
-              />
-              <WhatIfSimulator />
-            </div>
-
-            {/* Two Column: Impact + Recovery */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-              <div className="lg:col-span-3">
-                <ImpactRanking />
-              </div>
-              <div className="lg:col-span-2">
-                <RecoveryPlan />
-              </div>
-            </div>
+            />
+            <GradeOverview currentGrade={currentGrade} />
           </div>
-        )}
 
-        {/* Pre-Analysis State */}
-        {!hasAnalyzed && (
-          <div className="text-center py-12 text-sm text-muted-foreground">
-            Run the grade check to unlock the full dashboard.
+          <div className="mb-4">
+            <CookedChecker
+                currentGrade={currentGrade}
+                onAnalysisComplete={handleAnalysisComplete}
+            />
           </div>
-        )}
-      </main>
-    </div>
+
+          {hasAnalyzed && (
+              <div className="space-y-4">
+                <WhatIfSimulator />
+
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                  <div className="lg:col-span-3">
+                    <ImpactRanking />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <RecoveryPlan />
+                  </div>
+                </div>
+              </div>
+          )}
+
+          {!hasAnalyzed && (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                Run the grade check when your course setup is ready.
+              </div>
+          )}
+        </main>
+      </div>
   )
 }
